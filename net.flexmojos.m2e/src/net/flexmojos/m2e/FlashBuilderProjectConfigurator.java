@@ -7,6 +7,7 @@ import static net.flexmojos.oss.plugin.common.FlexExtension.SWF;
 import java.util.Arrays;
 
 import net.flexmojos.m2e.project.AbstractConfigurator;
+import net.flexmojos.m2e.project.internal.fb47.FlashBuilder47Module;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -19,26 +20,15 @@ import com.google.inject.Injector;
 
 /**
  * Configures a FlashBuilder project from Maven.
- * 
+ *
  * @author Sylvain Lecoy (sylvain.lecoy@gmail.com)
  */
-public class FlashBuilderProjectConfigurator
-    extends AbstractProjectConfigurator
+public class FlashBuilderProjectConfigurator extends AbstractProjectConfigurator
 {
 
     public FlashBuilderProjectConfigurator()
     {
-        // int major = 0, minor = 0;
-        //
-        // try {
-        // major =
-        // com.adobe.flexbuilder.project.FlexProjectConstants.AMT_FB4_MAJOR_VERSION;
-        // minor =
-        // com.adobe.flexbuilder.project.FlexProjectConstants.AMT_FB4_MINOR_VERSION;
-        // }
-        // catch (final Exception e) {
-        //
-        // }
+        // TODO: find the current Flash Builder version and set the class module compatible with the platform.
     }
 
     /**
@@ -57,11 +47,11 @@ public class FlashBuilderProjectConfigurator
         }
 
         // Creates the project configurator through the FlashBuilderModule.
-        final Injector injector = Guice.createInjector( new FlashBuilder47Module( request, monitor ) );
+        final FlashBuilderAbstractModule module = new FlashBuilder47Module( request, monitor );
+        final Injector injector = Guice.createInjector( module );
         final AbstractConfigurator configurator = injector.getInstance( AbstractConfigurator.class );
 
         configurator.configure();
-        configurator.saveDescription();
     }
 
     private boolean isQualifiedAsFlashBuilderProject( final IMavenProjectFacade facade )

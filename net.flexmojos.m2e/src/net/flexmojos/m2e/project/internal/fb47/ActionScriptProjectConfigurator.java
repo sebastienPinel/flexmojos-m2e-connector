@@ -1,4 +1,4 @@
-package net.flexmojos.m2e.project.fb47;
+package net.flexmojos.m2e.project.internal.fb47;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,7 +16,6 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.m2e.core.project.IMavenProjectFacade;
 
 import com.adobe.flexbuilder.project.ClassPathEntryFactory;
 import com.adobe.flexbuilder.project.IClassPathEntry;
@@ -26,34 +25,32 @@ import com.adobe.flexbuilder.project.common.CrossDomainRslEntry;
 import com.adobe.flexbuilder.util.FlashPlayerVersion;
 import com.google.inject.Inject;
 
-public class ActionScriptProjectConfigurator
-    extends AbstractConfigurator
+public class ActionScriptProjectConfigurator extends AbstractConfigurator
 {
-
     protected IProject project;
-
     protected IProgressMonitor monitor;
-
     protected IMutableActionScriptProjectSettings settings;
 
-    protected ActionScriptProjectConfigurator( final IMavenFlexPlugin plugin )
+    @Inject ActionScriptProjectConfigurator( final IMavenFlexPlugin plugin,
+                                             final IProject project,
+                                             final IProgressMonitor monitor )
     {
         super( plugin );
-    }
-
-    @Inject
-    public ActionScriptProjectConfigurator( final IMavenProjectFacade facade, final IProgressMonitor monitor,
-                                            final IMavenFlexPlugin plugin )
-    {
-        this( plugin );
+        this.project = project;
         this.monitor = monitor;
-        project = facade.getProject();
-        settings = ActionScriptCore.createProjectDescription( project.getName(), project.getLocation(), false
-        /* FIXME : hard - coded ! */);
     }
 
     @Override
-    public void saveDescription()
+    protected void createConfiguration()
+    {
+        this.settings = ActionScriptCore
+                            .createProjectDescription( project.getName(),
+                                                       project.getLocation(),
+                                                       false /* FIXME : hard - coded ! */);
+    }
+
+    @Override
+    protected void saveDescription()
     {
     }
 
@@ -66,7 +63,7 @@ public class ActionScriptProjectConfigurator
     @Override
     protected void configureHTMLTemplate()
     {
-        IFolder template = project.getFolder( "html-template" );
+        final IFolder template = project.getFolder( "html-template" );
         if ( template.exists() )
         {
             settings.setHTMLExpressInstall( true );
@@ -93,7 +90,6 @@ public class ActionScriptProjectConfigurator
         {
             // Converts IPath to IClassPathEntry.
             classPath[i] = ClassPathEntryFactory.newEntry( paths[i].toString(), settings );
-
         }
 
         settings.setSourcePath( classPath );
@@ -123,6 +119,7 @@ public class ActionScriptProjectConfigurator
     {
         final Map<String, Artifact> dependencies = plugin.getDependencies();
         final Map<String, IClassPathEntry> classPath = new LinkedHashMap<String, IClassPathEntry>();
+
         for ( final IClassPathEntry entry : settings.getLibraryPath() )
         {
             // Copy previous library path that exists in project's dependencies.
@@ -144,19 +141,24 @@ public class ActionScriptProjectConfigurator
             }
             final String scope = artifact.getScope();
             final IClassPathEntry entry =
-                ClassPathEntryFactory.newEntry( IClassPathEntry.KIND_LIBRARY_FILE, path, settings );
+                            ClassPathEntryFactory.newEntry( IClassPathEntry.KIND_LIBRARY_FILE, path, settings );
 
             if ( scope.equals( "rsl" ) && ( project instanceof FlexProjectConfigurator ) )
             {
                 entry.setLinkType( IClassPathEntry.LINK_TYPE_CROSS_DOMAIN_RSL );
                 entry.setCrossDomainRsls( new CrossDomainRslEntry[] { new CrossDomainRslEntry( artifact.getArtifactId()
-                    + ".swf", "", true ) } );
+                                                                                               + ".swf", "", true ) } );
+            }
+            else if (scope.equals( "internal" ))
+            {
+                entry.setLinkType( IClassPathEntry.LINK_TYPE_INTERNAL );
             }
 
             if ( !scope.equals( "test" ) )
                 // Adds entry to class path.
                 classPath.put( path, entry );
         }
+
         settings.setLibraryPath( classPath.values().toArray( new IClassPathEntry[classPath.size()] ) );
     }
 
@@ -167,9 +169,10 @@ public class ActionScriptProjectConfigurator
 
         // Sets source-path argument.
         final List<String> pathElements = new LinkedList<String>();
-        if ( plugin.getLocalesSourcePath() != null )
+        final IPath localesSourcePath = plugin.getLocalesSourcePath();
+        if ( localesSourcePath != null )
         {
-            pathElements.add( plugin.getLocalesSourcePath().toString() );
+            pathElements.add( localesSourcePath.toString() );
         }
         arguments.setSourcePath( pathElements );
 

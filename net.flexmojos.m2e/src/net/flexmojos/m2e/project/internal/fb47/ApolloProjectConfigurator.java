@@ -1,10 +1,10 @@
-package net.flexmojos.m2e.project.fb47;
+package net.flexmojos.m2e.project.internal.fb47;
 
 import net.flexmojos.m2e.maven.IMavenFlexPlugin;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.m2e.core.project.IMavenProjectFacade;
 
 import com.adobe.flexbuilder.project.FlexServerType;
 import com.adobe.flexbuilder.project.air.ApolloProjectCore;
@@ -19,13 +19,16 @@ public class ApolloProjectConfigurator
     extends AbstractFlexProjectConfigurator
 {
 
-    @Inject
-    public ApolloProjectConfigurator( final IMavenProjectFacade facade, final IProgressMonitor monitor,
-                                      final IMavenFlexPlugin plugin )
+    @Inject ApolloProjectConfigurator( final IMavenFlexPlugin plugin,
+                                       final IProject project,
+                                       final IProgressMonitor monitor )
     {
-        super( plugin );
-        this.monitor = monitor;
-        project = facade.getProject();
+        super( plugin, project, monitor );
+    }
+
+    @Override
+    protected void createConfiguration()
+    {
         final IApolloProject apolloProject = ApolloProjectCore.getApolloProject( project );
 
         if ( apolloProject != null )
@@ -35,16 +38,15 @@ public class ApolloProjectConfigurator
         else
         {
             // If it does not, create new settings.
-
-            settings =
-                ApolloProjectCore.createApolloSettings( project.getName(), project.getLocation(),
-                                                        FlexServerType.NO_SERVER
-                /* FIXME : hard - coded ! */);
+            settings = ApolloProjectCore
+                            .createApolloSettings( project.getName(),
+                                                   project.getLocation(),
+                                                   FlexServerType.NO_SERVER /* FIXME : hard - coded ! */);
         }
     }
 
     @Override
-    public void saveDescription()
+    protected void saveDescription()
     {
         final ApolloProjectSettings apolloProjectSettings = (ApolloProjectSettings) settings;
         apolloProjectSettings.saveDescription( project, monitor );
