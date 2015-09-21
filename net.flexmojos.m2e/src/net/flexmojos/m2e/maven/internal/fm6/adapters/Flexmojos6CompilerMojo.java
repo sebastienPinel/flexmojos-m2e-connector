@@ -52,7 +52,7 @@ public class Flexmojos6CompilerMojo
     @Override
     public @NonNull Xpp3Dom getManifests()
     {
-        return configuration.getChild("manifests");
+        return configuration.getChild("namespaces");
     }
 
     @Override

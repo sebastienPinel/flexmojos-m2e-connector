@@ -15,22 +15,21 @@ import com.adobe.flexbuilder.project.internal.FlexLibraryProjectSettings;
 import com.google.inject.Inject;
 
 public class FlexLibraryProjectConfigurator
-extends AbstractFlexProjectConfigurator
+    extends AbstractFlexProjectConfigurator
 {
 
-    @Inject FlexLibraryProjectConfigurator( final IMavenFlexPlugin plugin,
-                                            final IProject project,
-                                            final IProgressMonitor monitor )
+    @Inject
+    FlexLibraryProjectConfigurator(final IMavenFlexPlugin plugin, final IProject project, final IProgressMonitor monitor)
     {
-        super( plugin, project, monitor );
+        super(plugin, project, monitor);
     }
 
     @Override
     protected void createConfiguration()
     {
-        final IFlexLibraryProject flexProject = (IFlexLibraryProject) FlexProjectManager.getFlexProject( project );
+        final IFlexLibraryProject flexProject = (IFlexLibraryProject) FlexProjectManager.getFlexProject(project);
         // Checks if project already exists.
-        if ( flexProject != null )
+        if (flexProject != null)
         {
             // If it does, reuse the settings.
             settings = flexProject.getFlexLibraryProjectSettingsClone();
@@ -38,10 +37,9 @@ extends AbstractFlexProjectConfigurator
         else
         {
             // If it does not, create new settings.
-            settings = FlexProjectManager
-                            .createFlexLibraryProjectDescription( project.getName(),
-                                                                  project.getLocation(),
-                                                                  false /* FIXME: hard-coded ! */);
+            settings =
+                FlexProjectManager
+                    .createFlexLibraryProjectDescription(project.getName(), project.getLocation(), false /* FIXME: hard-coded ! */);
         }
     }
 
@@ -49,7 +47,7 @@ extends AbstractFlexProjectConfigurator
     protected void saveDescription()
     {
         final FlexLibraryProjectSettings flexProjectSettings = (FlexLibraryProjectSettings) settings;
-        flexProjectSettings.saveDescription( project, monitor );
+        flexProjectSettings.saveDescription(project, monitor);
     }
 
     @Override
@@ -68,10 +66,10 @@ extends AbstractFlexProjectConfigurator
         for (final Map.Entry<String, IPath> namespace : namespaces.entrySet())
         {
             // Converts <String, IPath> to XMLNamespaceManifestPath.
-            paths[iterator++] = new XMLNamespaceManifestPath( namespace.getKey(), namespace.getValue() );
+            paths[iterator++] = new XMLNamespaceManifestPath(namespace.getKey(), namespace.getValue());
         }
 
-        ((FlexLibraryProjectSettings) settings).setManifestPaths( paths );
+        ((FlexLibraryProjectSettings) settings).setManifestPaths(paths);
     }
 
     @Override
@@ -80,6 +78,8 @@ extends AbstractFlexProjectConfigurator
      */
     public void configure()
     {
+        createConfiguration();
+
         configureMainSourceFolder();
         configureSourcePath();
         configureLibraryPath();
