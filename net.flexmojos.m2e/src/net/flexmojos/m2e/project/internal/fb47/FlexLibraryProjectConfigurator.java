@@ -88,6 +88,8 @@ public class FlexLibraryProjectConfigurator
         configureTargetPlayerVersion();
         configureMainApplicationPath();
         configureAdditionalCompilerArgs();
+
+        saveDescription();
     }
 
 }
