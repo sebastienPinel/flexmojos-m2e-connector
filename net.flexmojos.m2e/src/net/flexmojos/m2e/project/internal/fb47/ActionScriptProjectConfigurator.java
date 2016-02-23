@@ -207,9 +207,13 @@ public class ActionScriptProjectConfigurator
                     entry.setCrossDomainRsls( new CrossDomainRslEntry[] { new CrossDomainRslEntry( artifact
                         .getArtifactId() + ".swf", "", true ) } );
                 }
-                else if ( scope.equals( "internal" ) )
+                else if ( scope.equals( "merged" ) )
                 {
                     entry.setLinkType( IClassPathEntry.LINK_TYPE_INTERNAL );
+                }
+                else
+                {
+                    entry.setLinkType( IClassPathEntry.LINK_TYPE_EXTERNAL );
                 }
 
                 if ( !scope.equals( "test" ) )
