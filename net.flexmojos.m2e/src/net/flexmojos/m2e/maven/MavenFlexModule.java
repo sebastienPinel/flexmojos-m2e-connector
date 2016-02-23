@@ -29,7 +29,7 @@ public class MavenFlexModule
 
     protected final MavenSession session;
 
-    public MavenFlexModule(final IMavenProjectFacade facade, final IProgressMonitor monitor, final MavenSession session)
+    public MavenFlexModule( final IMavenProjectFacade facade, final IProgressMonitor monitor, final MavenSession session )
     {
         this.facade = facade;
         this.monitor = monitor;
@@ -49,13 +49,13 @@ public class MavenFlexModule
     }
 
     @Provides
-    MavenProject getMavenProject(final IMavenProjectFacade facade)
+    MavenProject getMavenProject( final IMavenProjectFacade facade )
     {
         return facade.getMavenProject();
     }
 
     @Provides
-    Build getBuild(final MavenProject project)
+    Build getBuild( final MavenProject project )
     {
         return project.getBuild();
     }
@@ -66,30 +66,29 @@ public class MavenFlexModule
         final Map<String, Plugin> plugins = facade.getMavenProject().getBuild().getPluginsAsMap();
         final Plugin plugin;
 
-        if (plugins.containsKey("net.flexmojos.oss:flexmojos-maven-plugin"))
+        if ( plugins.containsKey( "net.flexmojos.oss:flexmojos-maven-plugin" ) )
         {
-            plugin = plugins.get("net.flexmojos.oss:flexmojos-maven-plugin");
+            plugin = plugins.get( "net.flexmojos.oss:flexmojos-maven-plugin" );
         }
-        else if (plugins.containsKey("org.sonatype.flexmojos:flexmojos-maven-plugin"))
+        else if ( plugins.containsKey( "org.sonatype.flexmojos:flexmojos-maven-plugin" ) )
         {
-            plugin = plugins.get("org.sonatype.flexmojos:flexmojos-maven-plugin");
+            plugin = plugins.get( "org.sonatype.flexmojos:flexmojos-maven-plugin" );
         }
         else
         {
-            throw new RuntimeException("Maven Flex Plug-in not found in project build artifacts.");
+            throw new RuntimeException( "Maven Flex Plug-in not found in project build artifacts." );
         }
 
-        switch (Character.getNumericValue(plugin.getVersion().charAt(0)))
+        switch ( Character.getNumericValue( plugin.getVersion().charAt( 0 ) ) )
         {
-            case 7:
             case 6:
             case 5: // TODO: test this is really supported.
             case 4: // TODO: test this is really supported.
-                install(new Flexmojos6Module(facade, monitor));
+                install( new Flexmojos6Module( facade, monitor ) );
                 break;
 
             default:
-                throw new RuntimeException("Maven Flex Plug-in version not supported.");
+                throw new RuntimeException( "Maven Flex Plug-in version not supported." );
         }
     }
 
@@ -97,18 +96,17 @@ public class MavenFlexModule
     {
         final Map<String, Artifact> dependencies = facade.getMavenProject().getArtifactMap();
         // Supports both Adobe and Apache groupId.
-        return dependencies.containsKey("com.adobe.flex.framework:common-framework")
-            || dependencies.containsKey("org.apache.flex.framework:common-framework")
-            || dependencies.containsKey("org.apache.flex.framework:framework");
+        return dependencies.containsKey( "com.adobe.flex.framework:common-framework" )
+            || dependencies.containsKey( "org.apache.flex.framework:common-framework" );
     }
 
     public boolean isApolloProject()
     {
         final Map<String, Artifact> dependencies = facade.getMavenProject().getArtifactMap();
         // Supports both Adobe and Apache groupId.
-        return dependencies.containsKey("com.adobe.flex.framework:air-framework")
-            || dependencies.containsKey("com.adobe.flex.framework.air:air-framework")
-            || dependencies.containsKey("org.apache.flex.framework.air:air-framework");
+        return dependencies.containsKey( "com.adobe.flex.framework:air-framework" )
+            || dependencies.containsKey( "com.adobe.flex.framework.air:air-framework" )
+            || dependencies.containsKey( "org.apache.flex.framework.air:air-framework" );
     }
 
     public String getPackaging()

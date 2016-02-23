@@ -21,32 +21,32 @@ public class Configuration
 
     private final ExpressionEvaluator evaluator;
 
-    Configuration(final MavenSession session, final MojoExecution mojoExecution)
+    Configuration( final MavenSession session, final MojoExecution mojoExecution )
     {
         configuration = mojoExecution.getConfiguration();
-        originalConfiguration = (Xpp3Dom) mojoExecution.getPlugin().getConfiguration();
-        evaluator = new PluginParameterExpressionEvaluator(session, mojoExecution);
+        originalConfiguration = ( Xpp3Dom ) mojoExecution.getPlugin().getConfiguration();
+        evaluator = new PluginParameterExpressionEvaluator( session, mojoExecution );
     }
 
     /**
      * Short-hand method for evaluating a configuration value.
      * @return the configuration value if defined, or the default value if not.
      */
-    public @Nullable String evaluate(final String name)
+    public @Nullable String evaluate( final String name )
     {
         try
         {
-            final Xpp3Dom child = configuration.getChild(name);
-            if (child.getValue() != null)
+            final Xpp3Dom child = configuration.getChild( name );
+            if ( child.getValue() != null )
             {
-                return (String) evaluator.evaluate(child.getValue());
+                return ( String ) evaluator.evaluate( child.getValue() );
             }
             else
             {
-                return (String) evaluator.evaluate(child.getAttribute("default-value"));
+                return ( String ) evaluator.evaluate( child.getAttribute( "default-value" ) );
             }
         }
-        catch (final Exception e)
+        catch ( final Exception e )
         {
             return null;
         }
@@ -56,9 +56,16 @@ public class Configuration
      * Short-hand method for evaluating a configuration value.
      * @return the configuration value if defined, or the default value if not.
      */
-    public @Nullable Xpp3Dom getChild(final String name)
+    public @Nullable Xpp3Dom getManifestPath()
     {
-        return configuration.getChild(name);
+        try
+        {
+            return configuration.getChild( "namespaces" );
+        }
+        catch ( final Exception e )
+        {
+            return null;
+        }
     }
 
     /**
@@ -67,8 +74,61 @@ public class Configuration
      * @param needle
      * @return
      */
-    public boolean exists(final String name)
+    public boolean exists( final String name )
     {
-        return originalConfiguration.getChild(name) != null;
+        return originalConfiguration.getChild( name ) != null;
+    }
+
+    /**
+     * <rslUrls> <url>{artifactId}.{extension}</url> </rslUrls>
+     * @return
+     */
+    public String getRslURL()
+    {
+        try
+        {
+            final Xpp3Dom child = configuration.getChild( "rslUrls" ).getChild( 0 );
+            if ( child.getValue() != null )
+            {
+                return ( String ) evaluator.evaluate( child.getValue() );
+            }
+            else
+            {
+                return ( String ) evaluator.evaluate( child.getAttribute( "default-value" ) );
+            }
+        }
+        catch ( final Exception e )
+        {
+            return null;
+        }
+    }
+
+    /**
+     * <rslUrls> <url>{artifactId}.{extension}</url> </rslUrls>
+     * @return
+     */
+    public String[] getLocalesCompiled()
+    {
+        try
+        {
+            final Xpp3Dom[] children = configuration.getChild( "localesCompiled" ).getChildren();
+            String[] localesCompiled = new String[children.length];
+            for ( int i = 0; i < children.length; i++ )
+            {
+                if ( children[i].getValue() != null )
+                {
+                    localesCompiled[i] = ( String ) evaluator.evaluate( children[i].getValue() );
+                }
+                else
+                {
+                    localesCompiled[i] = ( String ) evaluator.evaluate( children[i].getAttribute( "default-value" ) );
+                }
+            }
+            return localesCompiled;
+        }
+        catch ( final Exception e )
+        {
+            return null;
+        }
     }
 }

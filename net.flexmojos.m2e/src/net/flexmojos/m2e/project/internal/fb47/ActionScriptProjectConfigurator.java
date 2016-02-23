@@ -14,6 +14,7 @@ import net.flexmojos.m2e.project.AbstractConfigurator;
 import org.apache.maven.artifact.Artifact;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 
@@ -35,10 +36,10 @@ public class ActionScriptProjectConfigurator
     protected IMutableActionScriptProjectSettings settings;
 
     @Inject
-    ActionScriptProjectConfigurator(final IMavenFlexPlugin plugin, final IProject project,
-        final IProgressMonitor monitor)
+    ActionScriptProjectConfigurator( final IMavenFlexPlugin plugin, final IProject project,
+        final IProgressMonitor monitor )
     {
-        super(plugin);
+        super( plugin );
         this.project = project;
         this.monitor = monitor;
     }
@@ -48,7 +49,7 @@ public class ActionScriptProjectConfigurator
     {
         settings =
             ActionScriptCore
-                .createProjectDescription(project.getName(), project.getLocation(), false /* FIXME : hard - coded ! */);
+                .createProjectDescription( project.getName(), project.getLocation(), false /* FIXME : hard - coded ! */);
     }
 
     @Override
@@ -59,26 +60,26 @@ public class ActionScriptProjectConfigurator
     @Override
     protected void configureMainSourceFolder()
     {
-        settings.setMainSourceFolder(plugin.getMainSourceFolder());
+        settings.setMainSourceFolder( plugin.getMainSourceFolder() );
     }
 
     @Override
     protected void configureHTMLTemplate()
     {
-        final IFolder template = project.getFolder("html-template");
-        if (template.exists())
+        final IFolder template = project.getFolder( "html-template" );
+        if ( template.exists() )
         {
-            settings.setHTMLExpressInstall(true);
-            settings.setHTMLPlayerVersionCheck(true);
-            settings.setGenerateHTMLWrappers(true);
-            settings.setEnableHistoryManagement(true);
+            settings.setHTMLExpressInstall( true );
+            settings.setHTMLPlayerVersionCheck( true );
+            settings.setGenerateHTMLWrappers( true );
+            settings.setEnableHistoryManagement( true );
         }
         else
         {
-            settings.setHTMLExpressInstall(false);
-            settings.setHTMLPlayerVersionCheck(false);
-            settings.setGenerateHTMLWrappers(false);
-            settings.setEnableHistoryManagement(false);
+            settings.setHTMLExpressInstall( false );
+            settings.setHTMLPlayerVersionCheck( false );
+            settings.setGenerateHTMLWrappers( false );
+            settings.setEnableHistoryManagement( false );
         }
     }
 
@@ -88,85 +89,146 @@ public class ActionScriptProjectConfigurator
         final IPath[] paths = plugin.getSourcePath();
         final IClassPathEntry[] classPath = new IClassPathEntry[paths.length];
 
-        for (int i = 0; i < paths.length; i++)
+        for ( int i = 0; i < paths.length; i++ )
         {
             // Converts IPath to IClassPathEntry.
-            classPath[i] = ClassPathEntryFactory.newEntry(paths[i].toString(), settings);
+            classPath[i] = ClassPathEntryFactory.newEntry( paths[i].toString(), settings );
         }
 
-        settings.setSourcePath(classPath);
+        settings.setSourcePath( classPath );
     }
 
     @Override
     protected void configureTargetPlayerVersion()
     {
         final String playerBinary = plugin.getTargetPlayerVersion();
-        final FlashPlayerVersion version = new FlashPlayerVersion(playerBinary == null ? "0.0.0" : playerBinary);
-        settings.setTargetPlayerVersion(version);
+        final FlashPlayerVersion version = new FlashPlayerVersion( playerBinary == null ? "0.0.0" : playerBinary );
+        settings.setTargetPlayerVersion( version );
     }
 
     @Override
     protected void configureMainApplicationPath()
     {
         final IPath mainApplicationPath = plugin.getMainApplicationPath();
-        if (mainApplicationPath != null)
+        if ( mainApplicationPath != null )
         {
-            settings.setApplicationPaths(new IPath[] { mainApplicationPath });
-            settings.setMainApplicationPath(mainApplicationPath);
+            settings.setApplicationPaths( new IPath[] { mainApplicationPath } );
+            settings.setMainApplicationPath( mainApplicationPath );
         }
     }
 
     @Override
     protected void configureLibraryPath()
     {
-        final Map<String, Artifact> dependencies = plugin.getDependencies();
-        final Map<String, IClassPathEntry> classPath = new LinkedHashMap<String, IClassPathEntry>();
-
-        for (final IClassPathEntry entry : settings.getLibraryPath())
+        try
         {
-            // Copy previous library path that exists in project's dependencies.
-            if (dependencies.containsKey(entry.getValue()))
-            {
-                classPath.put(entry.getValue(), entry);
-            }
-            else if (entry instanceof ClassPathEntryFactory.FlexSDKClasspathEntry)
-            {
-                classPath.put("flex-framework", entry);
-            }
-        }
+            final Map<String, Artifact> dependencies = plugin.getDependencies();
+            final Map<String, IClassPathEntry> classPath = new LinkedHashMap<String, IClassPathEntry>();
 
-        for (final Artifact artifact : dependencies.values())
+            for ( final IClassPathEntry entry : settings.getLibraryPath() )
+            {
+                // Copy previous library path that exists in project's dependencies.
+                if ( dependencies.containsKey( entry.getValue() ) )
+                {
+                    classPath.put( entry.getValue(), entry );
+                }
+                else if ( entry instanceof ClassPathEntryFactory.FlexSDKClasspathEntry )
+                {
+                    String rslURL = plugin.getRslURL();
+                    if ( rslURL != null && project.hasNature( "com.adobe.flexbuilder.project.flexnature" ) )
+                    {
+                        Map<String, Artifact> frameworkDependencies = plugin.getFrameworkDependencies();
+
+                        IClassPathEntry[] childLibraries = entry.getChildLibraries( null );
+                        for ( int childLibrariesIndex = 0; childLibrariesIndex < childLibraries.length; childLibrariesIndex++ )
+                        {
+                            IClassPathEntry childLibrary = childLibraries[childLibrariesIndex];
+                            CrossDomainRslEntry[] crossDomainRsls = childLibrary.getCrossDomainRsls();
+                            String artifact = childLibrary.getValue();
+                            if ( artifact.contains( ".swc" ) )
+                            {
+                                artifact =
+                                    artifact.substring( artifact.lastIndexOf( "/" ) + 1, artifact.lastIndexOf( "." ) );
+                                Artifact frameworkArtifact = frameworkDependencies.get( artifact );
+
+                                if ( frameworkArtifact != null && frameworkArtifact.getScope().equals( "rsl" ) )
+                                {
+                                    CrossDomainRslEntry[] crossDomainRslsModified;
+                                    if ( crossDomainRsls == null )
+                                    {
+                                        crossDomainRslsModified = new CrossDomainRslEntry[1];
+                                        String rslUrl =
+                                            rslURL.replace( "{artifactId}", frameworkArtifact.getArtifactId() )
+                                                .replace( "{version}", frameworkArtifact.getVersion() )
+                                                .replace( "{extension}", "swf" );
+                                        crossDomainRslsModified[0] = new CrossDomainRslEntry( rslUrl, "", true );
+                                    }
+                                    else
+                                    {
+                                        crossDomainRslsModified = new CrossDomainRslEntry[crossDomainRsls.length];
+                                        for ( int i = 0; i < crossDomainRsls.length; i++ )
+                                        {
+                                            CrossDomainRslEntry crossDomainRsl = crossDomainRsls[i];
+                                            String rslUrl =
+                                                rslURL.replace( "{artifactId}", frameworkArtifact.getArtifactId() )
+                                                    .replace( "{version}", frameworkArtifact.getVersion() )
+                                                    .replace( "{extension}", "swf" );
+                                            crossDomainRslsModified[i] =
+                                                new CrossDomainRslEntry( rslUrl, crossDomainRsl.getPolicyFileUrl(),
+                                                    crossDomainRsl.getAutoExtractSwf() );
+                                        }
+                                    }
+                                    childLibrary.setLinkType( 4 );
+                                    childLibrary.setCrossDomainRsls( crossDomainRslsModified );
+                                }
+                            }
+                        }
+                    }
+                    classPath.put( "flex-framework", entry );
+                }
+            }
+
+            for ( final Artifact artifact : dependencies.values() )
+            {
+                // Copy dependencies to new class path.
+                String path = artifact.getFile().getAbsolutePath();
+                if ( !path.contains( ".swc" ) && !path.contains( ".swf" ) )
+                {
+                    path = artifact.getFile() + "/" + artifact.getArtifactId() + "." + artifact.getType();
+                }
+
+                final String scope = artifact.getScope();
+                final IClassPathEntry entry =
+                    ClassPathEntryFactory.newEntry( IClassPathEntry.KIND_LIBRARY_FILE, path, settings );
+
+                if ( scope.equals( "rsl" ) && project.hasNature( "com.adobe.flexbuilder.project.flexnature" ) )
+                {
+                    entry.setLinkType( IClassPathEntry.LINK_TYPE_CROSS_DOMAIN_RSL );
+                    entry.setCrossDomainRsls( new CrossDomainRslEntry[] { new CrossDomainRslEntry( artifact
+                        .getArtifactId() + ".swf", "", true ) } );
+                }
+                else if ( scope.equals( "internal" ) )
+                {
+                    entry.setLinkType( IClassPathEntry.LINK_TYPE_INTERNAL );
+                }
+
+                if ( !scope.equals( "test" ) )
+                {
+                    // Adds entry to class path.
+                    classPath.put( path, entry );
+                }
+            }
+
+            settings.setLibraryPath( classPath.values().toArray( new IClassPathEntry[classPath.size()] ) );
+        }
+        catch ( UnsupportedOperationException e )
         {
-            // Copy dependencies to new class path.
-            String path = artifact.getFile().getAbsolutePath();
-            if (!path.contains(".swc") && !path.contains(".swf"))
-            {
-                path = artifact.getFile() + "/" + artifact.getArtifactId() + "." + artifact.getType();
-            }
-            final String scope = artifact.getScope();
-            final IClassPathEntry entry =
-                ClassPathEntryFactory.newEntry(IClassPathEntry.KIND_LIBRARY_FILE, path, settings);
-
-            if (scope.equals("rsl") && (project instanceof FlexProjectConfigurator))
-            {
-                entry.setLinkType(IClassPathEntry.LINK_TYPE_CROSS_DOMAIN_RSL);
-                entry.setCrossDomainRsls(new CrossDomainRslEntry[] { new CrossDomainRslEntry(artifact.getArtifactId()
-                    + ".swf", "", true) });
-            }
-            else if (scope.equals("internal"))
-            {
-                entry.setLinkType(IClassPathEntry.LINK_TYPE_INTERNAL);
-            }
-
-            if (!scope.equals("test"))
-            {
-                // Adds entry to class path.
-                classPath.put(path, entry);
-            }
+            throw new RuntimeException( e );
         }
-
-        settings.setLibraryPath(classPath.values().toArray(new IClassPathEntry[classPath.size()]));
-        settings.setAutoRSLOrdering(true);
+        catch ( CoreException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -177,24 +239,30 @@ public class ActionScriptProjectConfigurator
         // Sets source-path argument.
         final List<String> pathElements = new LinkedList<String>();
         final IPath localesSourcePath = plugin.getLocalesSourcePath();
-        if (localesSourcePath != null)
+        if ( localesSourcePath != null )
         {
-            pathElements.add(localesSourcePath.toString());
+            pathElements.add( localesSourcePath.toString() );
         }
-        arguments.setSourcePath(pathElements);
+        arguments.setSourcePath( pathElements );
 
         // Sets locale argument.
         final List<String> locales = new ArrayList<String>();
-        locales.addAll(Arrays.asList(plugin.getLocalesCompiled()));
-        arguments.setLocalesCompiled(locales);
+        locales.addAll( Arrays.asList( plugin.getLocalesCompiled() ) );
+        arguments.setLocalesCompiled( locales );
 
-        settings.setAdditionalCompilerArgs(arguments.toString());
+        arguments.setSwfVersion( plugin.getSwfVersion() );
+        arguments.setDebug( plugin.isDebug() );
+        arguments.setOptimize( plugin.isOptimize() );
+
+        settings.setAdditionalCompilerArgs( arguments.toString() );
+
+        settings.setVerifyDigests( plugin.isVerifyDigests() );
     }
 
     @Override
     protected void configureOutputFolderPath()
     {
-        settings.setOutputFolder(plugin.getOutputFolderPath());
+        settings.setOutputFolder( plugin.getOutputFolderPath() );
     }
 
 }

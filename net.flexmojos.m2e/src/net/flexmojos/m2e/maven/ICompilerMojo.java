@@ -31,21 +31,38 @@ public interface ICompilerMojo
     IPath getOutputFolderPath();
 
     /**
-     * Gets manifest path.
+     * Gets the manifest paths.
      */
     @NonNull
-    Xpp3Dom getManifests();
+    Xpp3Dom getManifestPath();
 
     /**
-     * @return locales
+     * Get the RSL Url.
      */
-    @NonNull
-    Xpp3Dom getLocales();
+    String getRslURL();
 
     /**
-     * @return locales source path
+     * Get Locales for compilation.
      */
-    @NonNull
-    String getLocalesSource();
+    String[] getLocalesCompiled();
 
+    /**
+     * Get SWF version.
+     */
+    String getSwfVersion();
+
+    /**
+     * Get debug flag.
+     */
+    boolean isDebug();
+
+    /**
+     * Get optimize flag.
+     */
+    boolean isOptimize();
+
+    /**
+     * Get verify digests flag.
+     */
+    boolean isVerifyDigests();
 }

@@ -1,5 +1,6 @@
 package net.flexmojos.m2e.maven;
 
+import java.io.File;
 import java.util.Map;
 
 import org.apache.maven.artifact.Artifact;
@@ -7,17 +8,15 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.annotation.NonNull;
 
 /**
- * Defines the interface for plug-in implementation classes.
- *
- * The MavenFlexPlugin represents configuration of plug-ins as a whole. It reflects the MavenProjectFacade plus build
- * plug-ins involved in the configuration of the project as it is often composed of multiple components for different
- * goals such as compile-swf, sign-air and generate sources. These settings needs to be merged together so the
- * AbstractConfigurator can apply settings to the project accordingly.
- *
+ * Defines the interface for plug-in implementation classes. The MavenFlexPlugin represents configuration of plug-ins as
+ * a whole. It reflects the MavenProjectFacade plus build plug-ins involved in the configuration of the project as it is
+ * often composed of multiple components for different goals such as compile-swf, sign-air and generate sources. These
+ * settings needs to be merged together so the AbstractConfigurator can apply settings to the project accordingly.
  * @author Sylvain Lecoy (sylvain.lecoy@gmail.com)
  * @author Sebastien Pinel
  */
-public interface IMavenFlexPlugin extends ICompilerMojo
+public interface IMavenFlexPlugin
+    extends ICompilerMojo
 {
 
     /**
@@ -48,6 +47,16 @@ public interface IMavenFlexPlugin extends ICompilerMojo
     Map<String, Artifact> getDependencies();
 
     /**
+     * Gets the artifacts by adding Maven's SWC dependencies of the project.
+     */
+    Map<String, Artifact> getFrameworkDependencies();
+
+    /**
+     * Check if a dependency have a RSL scope.
+     */
+    boolean isRSLDependency( String artifact );
+
+    /**
      * Gets the locale source path.
      */
     IPath getLocalesSourcePath();
@@ -55,11 +64,18 @@ public interface IMavenFlexPlugin extends ICompilerMojo
     /**
      * Gets the locales compiled.
      */
+    @Override
     String[] getLocalesCompiled();
 
     /**
-     * Gets the XML name-space manifest path map.
+     * Gets the locales compiled.
      */
-    Map<String, IPath> getXMLNamespaceManifestPath();
+    IPath getFullPath( File file );
+
+    /**
+     * Gets the RSL URL.
+     */
+    @Override
+    String getRslURL();
 
 }

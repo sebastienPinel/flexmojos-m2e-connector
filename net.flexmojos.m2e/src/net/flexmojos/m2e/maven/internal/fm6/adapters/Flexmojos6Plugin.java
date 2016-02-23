@@ -2,7 +2,6 @@ package net.flexmojos.m2e.maven.internal.fm6.adapters;
 
 import static net.flexmojos.oss.plugin.common.FlexExtension.*;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -13,10 +12,10 @@ import net.flexmojos.m2e.maven.IMavenFlexPlugin;
 import net.flexmojos.m2e.maven.internal.MavenFlexPlugin;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Dependency;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.m2e.core.project.IMavenProjectFacade;
 
 import com.google.inject.Inject;
@@ -32,9 +31,9 @@ public class Flexmojos6Plugin
 {
 
     @Inject
-    Flexmojos6Plugin(final IMavenProjectFacade facade, final IProgressMonitor monitor)
+    Flexmojos6Plugin( final IMavenProjectFacade facade, final IProgressMonitor monitor )
     {
-        super(facade, monitor);
+        super( facade, monitor );
     }
 
     @Override
@@ -42,15 +41,15 @@ public class Flexmojos6Plugin
     {
         IPath[] sourcePath = super.getSourcePath();
 
-        if (generator != null)
+        if ( generator != null && !generator.getOutputDirectory().toFile().toString().contains( "src\\main\\flex" ) )
         {
-            final List<IPath> classPath = new ArrayList<IPath>(Arrays.asList(sourcePath));
+            final List<IPath> classPath = new ArrayList<IPath>( Arrays.asList( sourcePath ) );
 
             // Directories from generator mojo are treated as supplementary source path.
-            classPath.add(generator.getOutputDirectory());
-            classPath.add(generator.getBaseOutputDirectory());
+            classPath.add( generator.getOutputDirectory() );
+            classPath.add( generator.getBaseOutputDirectory() );
 
-            sourcePath = classPath.toArray(new IPath[classPath.size()]);
+            sourcePath = classPath.toArray( new IPath[classPath.size()] );
         }
 
         return sourcePath;
@@ -61,13 +60,33 @@ public class Flexmojos6Plugin
     {
         final Map<String, Artifact> dependencies = new LinkedHashMap<String, Artifact>();
 
-        for (final Artifact artifact : facade.getMavenProject().getArtifacts())
+        for ( final Artifact artifact : facade.getMavenProject().getArtifacts() )
         {
             // Only manage SWC type dependencies.
-            if (SWC.equals(artifact.getType()) && !isAirFramework(artifact) && !isFlashFramework(artifact)
-                && !isFlexFramework(artifact))
+            if ( SWC.equals( artifact.getType() ) && !isAirFramework( artifact ) && !isFlashFramework( artifact )
+                && !isFlexFramework( artifact ) )
             {
-                dependencies.put(artifact.getFile().getAbsolutePath(), artifact);
+                dependencies.put( artifact.getFile().getAbsolutePath(), artifact );
+            }
+        }
+
+        return dependencies;
+    }
+
+    /* (non-Javadoc)
+     * @see net.flexmojos.m2e.maven.IMavenFlexPlugin#getFrameworkDependencies()
+     */
+    @Override
+    public Map<String, Artifact> getFrameworkDependencies()
+    {
+        final Map<String, Artifact> dependencies = new LinkedHashMap<String, Artifact>();
+
+        for ( final Artifact artifact : facade.getMavenProject().getArtifacts() )
+        {
+            // Only manage SWC type dependencies.
+            if ( SWC.equals( artifact.getType() ) && isFlexFramework( artifact ) )
+            {
+                dependencies.put( artifact.getArtifactId(), artifact );
             }
         }
 
@@ -75,66 +94,52 @@ public class Flexmojos6Plugin
     }
 
     @Override
+    public boolean isRSLDependency( String artifact )
+    {
+        for ( final Dependency artifactRef : facade.getMavenProject().getDependencies() )
+        {
+            if ( artifactRef.getArtifactId().equals( artifact ) )
+            {
+                return artifactRef.getType().equalsIgnoreCase( "rsl" );
+            }
+        }
+        return false;
+    }
+
+    @Override
     public IPath getLocalesSourcePath()
     {
-        final String localesSourcePath = getLocalesSource();
-        final IPath path = facade.getProjectRelativePath(localesSourcePath);
+        // final String localesSourcePath = configuration.evaluate( "localesSourcePath" );
+        // final IPath path = facade.getProjectRelativePath( localesSourcePath );
         // // Checks the base path (without the placeholder {locale} exists).
-        return facade.getProject().exists(path.removeLastSegments(1)) ? path : null;
+        // return facade.getProject().exists( path.removeLastSegments( 1 ) ) ? path : null;
+        return null;
     }
 
     @Override
     public String[] getLocalesCompiled()
     {
-        final Xpp3Dom localesCompiled = getLocales(); // configuration.getChild( "localesCompiled" );
-        if (localesCompiled != null)
-        {
-            final String[] locales = new String[localesCompiled.getChildCount()];
-
-            for (int i = 0; i < localesCompiled.getChildCount(); i++)
-            {
-                locales[i] = localesCompiled.getChild(i).getValue();
-            }
-
-            return locales;
-        }
-        else
-        {
-            return new String[0];
-        }
+        return compiler.getLocalesCompiled();
     }
 
     @Override
-    public Map<String, IPath> getXMLNamespaceManifestPath()
+    public Xpp3Dom getManifestPath()
     {
-        final Xpp3Dom namespacesTag = getManifests();
-        final Map<String, IPath> namespaces = new LinkedHashMap<String, IPath>();
-
-        if (namespacesTag != null)
-        {
-            for (final Xpp3Dom namespace : namespacesTag.getChildren())
-            {
-                final String key = namespace.getChild("uri").getValue();
-                final IPath value = facade.getFullPath(new File(namespace.getChild("manifest").getValue()));
-                namespaces.put(key, value);
-            }
-        }
-
-        return namespaces;
+        return compiler.getManifestPath();
     }
 
     @Override
     public IPath getCertificatePath()
     {
         final Xpp3Dom airConfig =
-            facade.getMavenProject().getGoalConfiguration("net.flexmojos.oss", "flexmojos-maven-plugin",
-                "default-sign-air", "sign-air");
+            facade.getMavenProject().getGoalConfiguration( "net.flexmojos.oss", "flexmojos-maven-plugin",
+                "default-sign-air", "sign-air" );
 
-        final Xpp3Dom keystoreTag = airConfig.getChild("keystore");
+        final Xpp3Dom keystoreTag = airConfig.getChild( "keystore" );
 
-        if (keystoreTag != null)
+        if ( keystoreTag != null )
         {
-            return facade.getProjectRelativePath(null /* evaluate( keystoreTag ) */);
+            return facade.getProjectRelativePath( null /* evaluate( keystoreTag ) */);
         }
         else
         {
@@ -147,9 +152,9 @@ public class Flexmojos6Plugin
      * @param artifact The artifact to test.
      * @return <tt>true</tt> if this artifact belongs to Air Framework.
      */
-    protected boolean isAirFramework(final Artifact artifact)
+    protected boolean isAirFramework( final Artifact artifact )
     {
-        return artifact.getGroupId().startsWith("com.adobe.air.framework");
+        return artifact.getGroupId().startsWith( "com.adobe.air.framework" );
     }
 
     /**
@@ -157,9 +162,9 @@ public class Flexmojos6Plugin
      * @param artifact The artifact to test.
      * @return <tt>true</tt> if this artifact belongs to Flash Framework.
      */
-    protected boolean isFlashFramework(final Artifact artifact)
+    protected boolean isFlashFramework( final Artifact artifact )
     {
-        return artifact.getGroupId().startsWith("com.adobe.flash.framework");
+        return artifact.getGroupId().startsWith( "com.adobe.flash.framework" );
     }
 
     /**
@@ -167,37 +172,40 @@ public class Flexmojos6Plugin
      * @param artifact The artifact to test.
      * @return <tt>true</tt> if this artifact belongs to Flex Framework.
      */
-    protected boolean isFlexFramework(final Artifact artifact)
+    protected boolean isFlexFramework( final Artifact artifact )
     {
-        return artifact.getGroupId().startsWith("com.adobe.flex.framework")
-            || artifact.getGroupId().startsWith("org.apache.flex.framework");
+        return artifact.getGroupId().startsWith( "com.adobe.flex.framework" )
+            || artifact.getGroupId().startsWith( "org.apache.flex.framework" );
     }
 
-    /* (non-Javadoc)
-     * @see net.flexmojos.m2e.maven.ICompilerMojo#getManifestPath()
-     */
     @Override
-    public @NonNull Xpp3Dom getManifests()
+    public String getRslURL()
     {
-        return compiler.getManifests();
+        return compiler.getRslURL();
     }
 
-    /* (non-Javadoc)
-     * @see net.flexmojos.m2e.maven.ICompilerMojo#getLocales()
-     */
     @Override
-    public @NonNull Xpp3Dom getLocales()
+    public String getSwfVersion()
     {
-        return compiler.getLocales();
+        return compiler.getSwfVersion();
     }
 
-    /* (non-Javadoc)
-     * @see net.flexmojos.m2e.maven.ICompilerMojo#getLocalesSource()
-     */
     @Override
-    public @NonNull String getLocalesSource()
+    public boolean isDebug()
     {
-        return compiler.getLocalesSource();
+        return compiler.isDebug();
+    }
+
+    @Override
+    public boolean isOptimize()
+    {
+        return compiler.isOptimize();
+    }
+
+    @Override
+    public boolean isVerifyDigests()
+    {
+        return compiler.isVerifyDigests();
     }
 
 }

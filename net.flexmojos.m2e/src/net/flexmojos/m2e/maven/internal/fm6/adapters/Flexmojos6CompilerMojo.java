@@ -9,7 +9,6 @@ import org.apache.maven.plugin.MojoExecution;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.jdt.annotation.NonNull;
 
 import com.google.inject.Inject;
 
@@ -19,52 +18,75 @@ public class Flexmojos6CompilerMojo
 {
 
     @Inject
-    Flexmojos6CompilerMojo(final MavenSession session, final @CompilerMojo MojoExecution mojoExecution)
+    Flexmojos6CompilerMojo( final MavenSession session, final @CompilerMojo MojoExecution mojoExecution )
     {
-        super(session, mojoExecution);
+        super( session, mojoExecution );
     }
 
     @Override
     public String getTargetPlayerVersion()
     {
-        return configuration.evaluate("targetPlayer");
+        return configuration.evaluate( "targetPlayer" );
     }
 
     @Override
     public IPath getMainApplicationPath()
     {
-        final String sourceFile = configuration.evaluate("sourceFile");
-        return sourceFile == null ? null : new Path(sourceFile);
+        final String sourceFile = configuration.evaluate( "sourceFile" );
+        return sourceFile == null ? null : new Path( sourceFile );
     }
 
     @Override
     public boolean hasOutputFolderPath()
     {
-        return configuration.exists("outputDirectory");
+        return configuration.exists( "outputDirectory" );
     }
 
     @Override
     public IPath getOutputFolderPath()
     {
-        return new Path(configuration.evaluate("outputDirectory"));
+        return new Path( configuration.evaluate( "outputDirectory" ) );
     }
 
     @Override
-    public @NonNull Xpp3Dom getManifests()
+    public Xpp3Dom getManifestPath()
     {
-        return configuration.getChild("namespaces");
+        return configuration.getManifestPath();
     }
 
     @Override
-    public @NonNull Xpp3Dom getLocales()
+    public String getRslURL()
     {
-        return configuration.getChild("locales");
+        return configuration.getRslURL();
     }
 
     @Override
-    public @NonNull String getLocalesSource()
+    public String[] getLocalesCompiled()
     {
-        return configuration.evaluate("localesSourcePath");
+        return configuration.getLocalesCompiled();
     }
 
+    @Override
+    public String getSwfVersion()
+    {
+        return configuration.evaluate( "swfVersion" );
+    }
+
+    @Override
+    public boolean isDebug()
+    {
+        return Boolean.parseBoolean( configuration.evaluate( "debug" ) );
+    }
+
+    @Override
+    public boolean isOptimize()
+    {
+        return Boolean.parseBoolean( configuration.evaluate( "optimize" ) );
+    }
+
+    @Override
+    public boolean isVerifyDigests()
+    {
+        return Boolean.parseBoolean( configuration.evaluate( "verifyDigests" ) );
+    }
 }
