@@ -220,6 +220,7 @@ public class ActionScriptProjectConfigurator
             }
 
             settings.setLibraryPath( classPath.values().toArray( new IClassPathEntry[classPath.size()] ) );
+            settings.setAutoRSLOrdering( true );
         }
         catch ( UnsupportedOperationException e )
         {
