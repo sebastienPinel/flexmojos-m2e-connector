@@ -1,5 +1,6 @@
 package net.flexmojos.m2e.project.internal.fb47;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -191,10 +192,17 @@ public class ActionScriptProjectConfigurator
             for ( final Artifact artifact : dependencies.values() )
             {
                 // Copy dependencies to new class path.
-                String path = artifact.getFile().getAbsolutePath();
+                File artifactFile = artifact.getFile();
+                String path = artifactFile.getAbsolutePath();
+                if ( path.contains( "pom.xml" ) )
+                {
+                    path =
+                        artifactFile.getParentFile().getAbsolutePath() + "/target/classes/" + artifact.getArtifactId()
+                            + "." + artifact.getType();
+                }
                 if ( !path.contains( ".swc" ) && !path.contains( ".swf" ) )
                 {
-                    path = artifact.getFile() + "/" + artifact.getArtifactId() + "." + artifact.getType();
+                    path = artifactFile + "/" + artifact.getArtifactId() + "." + artifact.getType();
                 }
 
                 final String scope = artifact.getScope();

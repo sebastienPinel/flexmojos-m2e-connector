@@ -33,17 +33,17 @@ public class FlexLibraryProjectConfigurator
     {
         final IFlexLibraryProject flexProject = ( IFlexLibraryProject ) FlexProjectManager.getFlexProject( project );
         // Checks if project already exists.
-        if ( flexProject != null )
-        {
-            // If it does, reuse the settings.
-            settings = flexProject.getFlexLibraryProjectSettingsClone();
-        }
-        else
+        if ( flexProject == null )
         {
             // If it does not, create new settings.
             settings =
                 FlexProjectManager
                     .createFlexLibraryProjectDescription( project.getName(), project.getLocation(), false /* FIXME: hard-coded ! */);
+        }
+        else
+        {
+            // If it does, reuse the settings.
+            settings = flexProject.getFlexLibraryProjectSettingsClone();
         }
     }
 

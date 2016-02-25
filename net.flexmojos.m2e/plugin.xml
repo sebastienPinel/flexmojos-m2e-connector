@@ -12,5 +12,9 @@
    <extension
          point="org.eclipse.m2e.core.lifecycleMappingMetadataSource">
    </extension>
+   <extension
+         point="org.eclipse.ui.startup">
+         <startup class="net.flexmojos.m2e.FlashBuilderStarter"/>
+   </extension>
 
 </plugin>

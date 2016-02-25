@@ -16,9 +16,8 @@ public class FlexProjectConfigurator
     extends AbstractFlexProjectConfigurator
 {
 
-    @Inject FlexProjectConfigurator( final IMavenFlexPlugin plugin,
-                                     final IProject project,
-                                     final IProgressMonitor monitor )
+    @Inject
+    FlexProjectConfigurator( final IMavenFlexPlugin plugin, final IProject project, final IProgressMonitor monitor )
     {
         super( plugin, project, monitor );
     }
@@ -26,7 +25,15 @@ public class FlexProjectConfigurator
     @Override
     protected void createConfiguration()
     {
-        final IFlexProject flexProject = FlexProjectManager.getFlexProject( project );
+        final IFlexProject flexProject;
+        if ( project.getFile( ".actionScriptProperties" ).exists() )
+        {
+            flexProject = FlexProjectManager.getFlexProject( project );
+        }
+        else
+        {
+            flexProject = null;
+        }
         // Checks if project already exists.
         if ( flexProject != null )
         {
@@ -36,18 +43,16 @@ public class FlexProjectConfigurator
         else
         {
             // If it does not, create new settings.
-            settings = FlexProjectManager
-                            .createFlexProjectDescription( project.getName(),
-                                                           project.getLocation(),
-                                                           false /* FIXME : hard - coded ! */,
-                                                           FlexServerType.NO_SERVER /* FIXME : hard - coded ! */);
+            settings =
+                FlexProjectManager.createFlexProjectDescription( project.getName(), project.getLocation(),
+                    false /* FIXME : hard - coded ! */, FlexServerType.NO_SERVER /* FIXME : hard - coded ! */);
         }
     }
 
     @Override
     protected void saveDescription()
     {
-        final FlexProjectSettings flexProjectSettings = (FlexProjectSettings) settings;
+        final FlexProjectSettings flexProjectSettings = ( FlexProjectSettings ) settings;
         flexProjectSettings.saveDescription( project, monitor );
     }
 
